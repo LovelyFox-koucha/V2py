@@ -1,6 +1,6 @@
 # -*- coding: UTF-8 -*-
 # @LastAuthor: 隠れた人
-# @Date: 2019-06-09 00:44:40
+# @Date: 2019-06-22 00:16:08
 
 #导包
 import json
@@ -15,39 +15,46 @@ import tkinter.filedialog
 import requests
 from PIL import Image, ImageTk
 
+import pycurl
+
 #常量变量初始值
 delay = "未测试"
 port = "未设置"
+port1 = "未设置"
 status = 0
 
 
 #函数实现
 def StartUP():
     try:
-        with open(r".\V2ray-core\config.json", 'r') as f:
+        with open(r".\V2ray-core\config.json", "r") as f:
             try:
                 config = json.load(f)
             except:
                 config = "error!"
-                raise Exception("Invalid level!", config)
+                raise Exception("Invalid Config!", config)
             f.close()
         TextBox.insert(
-            tkinter.END, "GUI程序启动完成....OK\n存在符合json格式的配置\n请不要快速反复启动停止...\n"
-            "右击最小化按钮可最小化到系统托盘\n但是不要直接在托盘操作[会卡死界面]\n")
+            tkinter.END, "存在符合json格式的配置\n请不要快速反复启动停止或打开多个实例...\n"
+            "右击最小化按钮可最小化到系统托盘\n但是不要直接在托盘操作[会卡死界面]\n配置中的入口顺序应当为socks/http\n")
         TextBox.see(tkinter.END)
     except:
         TextBox.insert(
-            tkinter.END, "GUI程序启动完成....OK\n存在符合json格式的配置\n请不要快速反复启动停止...\n"
-            "右击最小化按钮可最小化到系统托盘\n但是不要直接在托盘操作[会卡死界面]\n")
+            tkinter.END, "存在符合json格式的配置\n请不要快速反复启动停止或打开多个实例...\n"
+            "右击最小化按钮可最小化到系统托盘\n但是不要直接在托盘操作[会卡死界面]\n配置中的入口顺序应当为socks/http\n")
         TextBox.see(tkinter.END)
 
 
-def Check(port, delay):
+def Check():
+    global port
+    global port1
+    global delay
     while True:
-        with open(r".\V2ray-core\config.json", 'r') as f:
+        with open(r".\V2ray-core\config.json", "r") as f:
             d = json.load(f)
             f.close()
-        port = d['inbounds'][0]['port']
+        port = d["inbounds"][0]["port"]
+        port1 = d["inbounds"][1]["port"]
         r = requests.Session()
         proxies = {
             "http": "socks5://127.0.0.1:" + str(port),
@@ -55,11 +62,11 @@ def Check(port, delay):
         }
         try:
             s = r.get("https://www.google.com/", timeout=3, proxies=proxies)
-            delay = s.elapsed.microseconds / 1000
+            delay = int(s.elapsed.microseconds / 1000)
         except:
             delay = "超时"
-        Msg.config(text="Socks端口:            " + str(port) + "\n加载谷歌需要:    " +
-                   str(delay) + "ms")
+        Msg.config(text="Socks端口:    " + str(port) + "    Http端口:    " +
+                   str(port1) + "\n加载谷歌需要:    " + str(delay) + "  ms")
         Msg.update()
         time.sleep(5)
 
@@ -123,7 +130,7 @@ def Start():
                             stdin=subprocess.PIPE,
                             stdout=subprocess.PIPE,
                             stderr=subprocess.STDOUT)
-    for i in iter(proc.stdout.readline, 'b'):
+    for i in iter(proc.stdout.readline, "b"):
         TextBox.insert(tkinter.END, i)
         TextBox.update()
         TextBox.see(tkinter.END)
@@ -172,32 +179,42 @@ def Restart():
 
 
 def Upgrade():
+    global status
+    global port1
     try:
         TextBox.insert(tkinter.END, "[提示]该功能在网络状态差的情况下将无法正常使用\n")
         TextBox.see(tkinter.END)
         githubapi = "https://api.github.com/repos/v2ray/v2ray-core/releases/latest"
         githubjson = requests.get(githubapi)
         gj = json.loads(githubjson.text)
-        version = gj['tag_name']
+        version = gj["tag_name"]
         url = "https://github.com/v2ray/v2ray-core/releases/download/" + str(
             version) + "/v2ray-windows-64.zip"
         TextBox.insert(tkinter.END, "开始下载核心\nURL:" + url + "\n")
         TextBox.see(tkinter.END)
-        download = r".\wget.exe -t 1 -T 30 -O v2ray-windows-64.zip " + url
-        downproc = subprocess.Popen(download,
-                                    shell=True,
-                                    stdin=subprocess.PIPE,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.STDOUT)
-        i = downproc.stdout.read()
-        TextBox.insert(tkinter.END, i)
-        TextBox.update()
-        TextBox.see(tkinter.END)
+        with open(r".\v2ray-windows-64.zip", "wb") as f:
+            c = pycurl.Curl()
+            if status == 1 and port1 != "未设置":
+                c.setopt(pycurl.PROXY, "http://127.0.0.1:" + str(port1))
+                TextBox.insert(tkinter.END, "已启用http代理\n")
+                TextBox.update()
+                TextBox.see(tkinter.END)
+            else:
+                TextBox.insert(tkinter.END, "未启用http代理\n")
+                TextBox.update()
+                TextBox.see(tkinter.END)
+            c.setopt(pycurl.FOLLOWLOCATION, True)
+            c.setopt(pycurl.MAXREDIRS, 5)
+            c.setopt(pycurl.TIMEOUT, 60)
+            c.setopt(c.URL, url)
+            c.setopt(c.WRITEDATA, f)
+            c.perform()
+            c.close()
         TextBox.insert(tkinter.END, "下载进程结束\n请查看是否下载成功\n")
         TextBox.update()
         TextBox.see(tkinter.END)
     except:
-        TextBox.insert(tkinter.END, "核心下载故障\n")
+        TextBox.insert(tkinter.END, "核心下载故障\n可能是下载时间超过60s\n")
         TextBox.update()
         TextBox.see(tkinter.END)
 
@@ -242,7 +259,7 @@ def Quit():
 
 ##根窗口
 root = tkinter.Tk()
-root.geometry("400x300+200+200")
+root.geometry("400x310+400+400")
 root.resizable(False, False)
 root.title("V2py")
 root.iconbitmap("V2py.ico")
@@ -255,14 +272,14 @@ B3 = tkinter.Button(root, text="停止", width=10, command=Stop)
 B4 = tkinter.Button(root, text="更新核心", width=15, command=Upgrade_t)
 B5 = tkinter.Button(root, text="导入配置", width=15, command=Import)
 Msg = tkinter.Label(root,
-                    text="Socks端口:        " + str(port) + "\n加载谷歌需要:    " +
-                    str(delay) + "ms",
+                    text="Socks端口:    " + str(port) + "    Http端口:    " +
+                    str(port1) + "\n加载谷歌需要:    " + str(delay) + "  ms",
                     width=30,
                     justify="left")
 img = Image.open("V2py.png")
 Logo = ImageTk.PhotoImage(img)
 L1 = tkinter.Label(root, image=Logo)
-TextBox = tkinter.Text(root, width=62, height=10, font=('', 9, ''))
+TextBox = tkinter.Text(root, width=62, height=10, font=("", 9, ""))
 
 ##布局
 B1.grid(row=0, column=0, padx=5, pady=5, columnspan=2)
@@ -278,7 +295,7 @@ TextBox.grid(row=4, column=0, padx=5, pady=5, columnspan=8)
 if __name__ == "__main__":
     TopTray()
     StartUP()
-    timer = threading.Thread(target=Check, args=(port, delay))
+    timer = threading.Thread(target=Check, args=())
     timer.setDaemon(True)
     timer.start()
     root.mainloop()
