@@ -1,5 +1,13 @@
 # V2py
 
+![screenshot](readme\screenshot.png)
+
+
+## 声明
+本项目使用GPLv3许可
+本项目不带任何代理功能
+仅供为GUI练习项目使用,请勿用于违法用途
+
 ## 特性
 - 支持启动/重启/停止
 - 支持更新核心文件
@@ -20,3 +28,7 @@
 - 显示http代理端口
 - 优化延迟测试部分
 - 界面自适应化设计[防止系统缩放导致的显示异常]
+
+## 致谢
+- 文件下载[wget项目](https://github.com/mirror/wget)
+- 系统托盘[TopTray项目](https://github.com/RanFeng/TopTray)
