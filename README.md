@@ -1,6 +1,6 @@
 # V2py
 
-![screenshot](readme\screenshot.png)
+![screenshot](https://github.com/LovelyFox-koucha/V2py/blob/master/readme/screenshot.png)
 
 
 ## 声明
